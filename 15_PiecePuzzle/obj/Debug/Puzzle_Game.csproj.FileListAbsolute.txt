@@ -1,0 +1,9 @@
+E:\Documents\GitHub\15_PiecePuzzle\15_PiecePuzzle\bin\Debug\15_PiecePuzzle.exe.config
+E:\Documents\GitHub\15_PiecePuzzle\15_PiecePuzzle\bin\Debug\15_PiecePuzzle.exe
+E:\Documents\GitHub\15_PiecePuzzle\15_PiecePuzzle\bin\Debug\15_PiecePuzzle.pdb
+E:\Documents\GitHub\15_PiecePuzzle\15_PiecePuzzle\obj\Debug\_15_PiecePuzzle.Properties.Resources.resources
+E:\Documents\GitHub\15_PiecePuzzle\15_PiecePuzzle\obj\Debug\Puzzle_Game.Puzzle.resources
+E:\Documents\GitHub\15_PiecePuzzle\15_PiecePuzzle\obj\Debug\Puzzle_Game.csproj.GenerateResource.Cache
+E:\Documents\GitHub\15_PiecePuzzle\15_PiecePuzzle\obj\Debug\15_PiecePuzzle.exe
+E:\Documents\GitHub\15_PiecePuzzle\15_PiecePuzzle\obj\Debug\15_PiecePuzzle.pdb
+E:\Documents\GitHub\15_PiecePuzzle\15_PiecePuzzle\obj\Debug\Puzzle_Game.csprojResolveAssemblyReference.cache
