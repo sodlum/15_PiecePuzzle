@@ -33,6 +33,17 @@ namespace Puzzle_Game
             count++;
         }
 
+        public Node getEmptyNode()
+        {
+            Node emptyNode = null;
+
+            foreach (Node node in nodes)
+                if (node.Value == 0)
+                    emptyNode = node;
+
+            return emptyNode;
+        }
+
         public void linkNodes(int width, int height)
         {
             for(int h = 0; h < height; h++)
@@ -114,9 +125,6 @@ namespace Puzzle_Game
 
         public void updateSurroundingPointers(Node movedNode, Node emptyNode, int direction)
         {
-            Node tempEmptyNode = new Node(emptyNode);
-            Node tempMovedNode = new Node(movedNode);
-
             if(direction % 2 == 1)
             {
                 if(movedNode.east != null && emptyNode.east != null)
@@ -181,8 +189,8 @@ namespace Puzzle_Game
 
         public void moveNodes(Node movingNode, Node emptyNode, int direction)
         {
-            Node tempEmptyNode = new Node(emptyNode);
-            Node tempMovingNode = new Node(movingNode);
+            Node tempEmptyNode = (emptyNode.Clone() as Node);
+            Node tempMovingNode = (movingNode.Clone() as Node);
 
             switch (direction)
             {
@@ -240,7 +248,7 @@ namespace Puzzle_Game
         }
     }
 
-    class Node
+    class Node : ICloneable
     {
         public Node north;
         public Node south;
@@ -277,15 +285,14 @@ namespace Puzzle_Game
             y_pos = y;
         }
 
-        public Node(Node node)
+        object ICloneable.Clone()
         {
-            this.value = node.value;
-            this.x_pos = node.x_pos;
-            this.y_pos = node.y_pos;
-            this.north = node.north;
-            this.south = node.south;
-            this.east = node.east;
-            this.west = node.west;
+            return this.Clone();
+        }
+
+        public Node Clone()
+        {
+            return (Node)this.MemberwiseClone();
         }
     }
 }

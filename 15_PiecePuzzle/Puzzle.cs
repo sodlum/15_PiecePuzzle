@@ -13,6 +13,8 @@ namespace Puzzle_Game
     public partial class Puzzle : Form
     {
         private NodeCollection nodes;
+        private int height;
+        private int width;
 
         public Puzzle()
         {
@@ -21,7 +23,8 @@ namespace Puzzle_Game
 
         private void Puzzle_Load(object sender, EventArgs e)
         {
-            // do nothing
+            height = 0;
+            width = 0;
         }
 
         private void btnGenerate_Click(object sender, EventArgs e)
@@ -34,8 +37,8 @@ namespace Puzzle_Game
                 if(rgx.Matches(txtHeight.Text).Count == 0) throw new ArgumentException("Height is not a number");
                 else if(rgx.Matches(txtWidth.Text).Count == 0) throw new ArgumentException("Width is not a number");
 
-                int height = int.Parse(txtHeight.Text);
-                int width = int.Parse(txtWidth.Text);
+                height = int.Parse(txtHeight.Text);
+                width = int.Parse(txtWidth.Text);
 
                 if (height < 2 || height > 19) throw new ArgumentOutOfRangeException("Height must be greater than 1 and less than 20");
                 else if(width < 2 || width > 19) throw new ArgumentOutOfRangeException("Width must be greater than 1 and less than 20");
@@ -74,10 +77,80 @@ namespace Puzzle_Game
                         else nodes.AddNode(0, gridWidth, gridHeight, gridWidth * 35, gridHeight * 35);
                     }
 
+                Button shuffleButton = new Button();
+                shuffleButton.Name = "btnShuffle";
+                shuffleButton.Text = "Shuffle";
+                shuffleButton.Location = new Point(20, puzzleForm.Size.Height - 90);
+                shuffleButton.Click += new EventHandler(shuffle);
+                shuffleButton.Visible = true;
+                puzzleForm.Controls.Add(shuffleButton);
                 nodes.linkNodes(width, height);
             }
             catch(ArgumentOutOfRangeException aoorex) { lblError.Text = aoorex.ParamName; }
             catch(ArgumentException aex) { lblError.Text = aex.Message; }
+        }
+
+        private void shuffle(object sender, EventArgs e)
+        {
+            Node emptyNode = nodes.getEmptyNode();
+            int selector;
+            int limit;
+            int gridArea = width * height;
+            Random rnd = new Random();
+            Control[] buttons = new Control[width * height - 1];
+            (((sender as Button).Parent as Form).GetNextControl(new Panel(), true) as Panel).Controls.CopyTo(buttons, 0);
+
+            if (gridArea < 20)
+                limit = (int)Math.Pow(gridArea, 3);
+            else if (gridArea < 150)
+                limit = (int)Math.Pow(gridArea, 2);
+            else limit = (int)Math.Pow(gridArea, 1.5);
+
+            for(int i = 0; i < limit; i++)
+            {
+                selector = rnd.Next(1, 5);
+
+                if (selector == 1)
+                {
+                    if (emptyNode.south != null)
+                        foreach (Button btn in buttons)
+                            if (btn.Text == emptyNode.south.Value.ToString())
+                            {
+                                btn.PerformClick();
+                                break;
+                            }
+                }
+                else if (selector == 2)
+                {
+                    if (emptyNode.east != null)
+                        foreach (Button btn in buttons)
+                            if (btn.Text == emptyNode.east.Value.ToString())
+                            {
+                                btn.PerformClick();
+                                break;
+                            }
+                }
+                else if (selector == 3)
+                {
+                    if (emptyNode.north != null)
+                        foreach (Button btn in buttons)
+                            if (btn.Text == emptyNode.north.Value.ToString())
+                            {
+                                btn.PerformClick();
+                                break;
+                            }
+                }
+                else
+                {
+                    if (emptyNode.west != null)
+                        foreach (Button btn in buttons)
+                            if (btn.Text == emptyNode.west.Value.ToString())
+                            {
+                                btn.PerformClick();
+                                break;
+                            }
+                }
+            }
         }
 
         private void movePiece(object sender, EventArgs e)
@@ -114,11 +187,6 @@ namespace Puzzle_Game
         }
 
         private void updateBoard(Panel pane, Button btn, Node node, int buttonAmount)
-        {
-            Control[] buttons = new Control[buttonAmount];
-            pane.Controls.CopyTo(buttons, 0);
-
-            btn.Location = new Point(node.HorizontalPosition, node.VerticalPosition);
-        }
+        { btn.Location = new Point(node.HorizontalPosition, node.VerticalPosition); }
     }
 }
