@@ -14,10 +14,27 @@ namespace Puzzle_Game
         private int height;
         private int buttonSize;
 
+        /// <summary>
+        /// Gets the width of the current board in play
+        /// </summary>
         public int Width { get { return width; } }
+
+        /// <summary>
+        /// Gets the height of the current board in play
+        /// </summary>
         public int Height { get { return height; } }
+
+        /// <summary>
+        /// Gets the total count of tiles on the board
+        /// </summary>
         public int Count { get { return count; } }
 
+        /// <summary>
+        /// Initializes the current node collection with the width, height, and size of tiles
+        /// </summary>
+        /// <param name="w">width of the current board</param>
+        /// <param name="h">height of the current board</param>
+        /// <param name="size">size of each side of the tiles on the current board</param>
         public NodeCollection(int w, int h, int size)
         {
             width = w;
@@ -27,12 +44,24 @@ namespace Puzzle_Game
             count = 0;
         }
 
+        /// <summary>
+        /// Adds Node to NodeCollection
+        /// </summary>
+        /// <param name="identifier">Tile number of the node</param>
+        /// <param name="w">horizontal position of the node in the NodeCollection</param>
+        /// <param name="h">vertical postion of the node in the NodeCollection</param>
+        /// <param name="x">position along the x-axis where the corresponding tile sits</param>
+        /// <param name="y">position along the y-axis where the corresponding tile sits</param>
         public void AddNode(int identifier, int w, int h, int x, int y)
         {
             nodes[h, w] = new Node(identifier, x, y);
             count++;
         }
 
+        /// <summary>
+        /// Finds the node representing the emtpy tile
+        /// </summary>
+        /// <returns>Node representing the empty tile</returns>
         public Node getEmptyNode()
         {
             Node emptyNode = null;
@@ -44,7 +73,10 @@ namespace Puzzle_Game
             return emptyNode;
         }
 
-        public void linkNodes(int width, int height)
+        /// <summary>
+        /// Links all Nodes in the NodeCollection together based on cardinal direction
+        /// </summary>
+        public void linkNodes()
         {
             for(int h = 0; h < height; h++)
             {
@@ -117,12 +149,22 @@ namespace Puzzle_Game
             }
         }
 
+        /// <summary>
+        /// Iterates through each Node in the NodeCollection
+        /// </summary>
+        /// <returns>Iterator of the current Node</returns>
         public IEnumerator<Node> GetEnumerator()
         {
             foreach (Node node in nodes)
                 yield return node;
         }
 
+        /// <summary>
+        /// Updates pointers surrounding the empty node and the node that was moved
+        /// </summary>
+        /// <param name="movedNode">Node that was moved to the empty tile position</param>
+        /// <param name="emptyNode">The new empty tile position</param>
+        /// <param name="direction">Direction in which movedNode traveled</param>
         public void updateSurroundingPointers(Node movedNode, Node emptyNode, int direction)
         {
             if(direction % 2 == 1)
@@ -187,6 +229,12 @@ namespace Puzzle_Game
             }
         }
 
+        /// <summary>
+        /// Updates pointers for the node being moved and the emtpy node
+        /// </summary>
+        /// <param name="movingNode">Node being moved</param>
+        /// <param name="emptyNode">Current empty Node</param>
+        /// <param name="direction">Direction in which movingNode will travel</param>
         public void moveNodes(Node movingNode, Node emptyNode, int direction)
         {
             Node tempEmptyNode = (emptyNode.Clone() as Node);
@@ -246,6 +294,111 @@ namespace Puzzle_Game
 
             updateSurroundingPointers(movingNode, emptyNode, direction);
         }
+
+        /// <summary>
+        /// Validates the order of the nodes to ensure they are in the solved state
+        /// </summary>
+        /// <returns>true if the nodes are in the proper order, false otherwise</returns>
+        public bool validateNodeOrder()
+        {
+            Node emptyNode = getEmptyNode();
+            
+            if (emptyNode.south != null || emptyNode.east != null)
+                return false;
+            
+            Node currentNode = emptyNode.Clone();
+
+            int wIndex = width - 1;
+            int hIndex = height - 1;
+            bool goLeft = true;
+
+            if(height % 2 != 0)
+            {
+                while (wIndex >= 0 && hIndex >= 0)
+                {
+                    if(goLeft)
+                    {
+                        if (currentNode.Value != nodes[hIndex, wIndex].Value)
+                            return false;
+
+                        if(wIndex == 0)
+                        {
+                            goLeft = false;
+                            if(hIndex != 0)
+                                currentNode = currentNode.north.Clone();
+                            hIndex--;
+                        }
+                        else
+                        {
+                            currentNode = currentNode.west.Clone();
+                            wIndex--;
+                        }
+                    }
+                    else
+                    {
+                        if (currentNode.Value != nodes[hIndex, wIndex].Value)
+                            return false;
+
+                        if(wIndex == width - 1)
+                        {
+                            goLeft = true;
+                            if(hIndex != 0)
+                                currentNode = currentNode.north.Clone();
+                            hIndex--;
+                        }
+                        else
+                        {
+                            currentNode = currentNode.east.Clone();
+                            wIndex++;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                while (wIndex < width && hIndex >= 0)
+                {
+                    if (goLeft)
+                    {
+                        if (currentNode.Value != nodes[hIndex, wIndex].Value)
+                            return false;
+
+                        if (wIndex == 0)
+                        {
+                            goLeft = false;
+                            if(hIndex != 0)
+                                currentNode = currentNode.north.Clone();
+                            hIndex--;
+                        }
+                        else
+                        {
+                            currentNode = currentNode.west.Clone();
+                            wIndex--;
+                        }
+                    }
+                    else
+                    {
+                        if (currentNode.Value != nodes[hIndex, wIndex].Value)
+                            return false;
+
+                        if (wIndex == width - 1)
+                        {
+                            goLeft = true;
+                            if(hIndex != 0)
+                                currentNode = currentNode.north.Clone();
+                            hIndex--;
+                        }
+                        else
+                        {
+                            currentNode = currentNode.east.Clone();
+                            wIndex++;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
     }
 
     class Node : ICloneable
@@ -258,26 +411,44 @@ namespace Puzzle_Game
         private int x_pos;
         private int y_pos;
 
+        /// <summary>
+        /// Gets or sets the value of the current Node
+        /// </summary>
         public int Value 
         { 
             get { return this.value; }
             set { this.value = value; }
         }
 
+        /// <summary>
+        /// Gets or sets the current Node position along the x-axis of the corresponding tile
+        /// </summary>
         public int HorizontalPosition 
         { 
             get { return x_pos; }
             set { x_pos = value; }
         }
 
+        /// <summary>
+        /// Gets or sets the current Node position along the y-axis of the corresponding tile
+        /// </summary>
         public int VerticalPosition 
         { 
             get { return y_pos; }
             set { y_pos = value; }
         }
 
+        /// <summary>
+        /// Creates an empty Node
+        /// </summary>
         public Node() { value = 0; }
 
+        /// <summary>
+        /// Creates a new Node representing a board tile
+        /// </summary>
+        /// <param name="val">Value of the corresponding tile</param>
+        /// <param name="x">Position along the x-axis of the corresponding tile</param>
+        /// <param name="y">Position along the y-axis of the corresponding tile</param>
         public Node(int val, int x, int y) 
         { 
             value = val;
@@ -285,11 +456,19 @@ namespace Puzzle_Game
             y_pos = y;
         }
 
+        /// <summary>
+        /// Clones the current Node
+        /// </summary>
+        /// <returns>deep copy of the current Node</returns>
         object ICloneable.Clone()
         {
             return this.Clone();
         }
 
+        /// <summary>
+        /// Clones the current Node
+        /// </summary>
+        /// <returns>deep copy of the current Node</returns>
         public Node Clone()
         {
             return (Node)this.MemberwiseClone();
