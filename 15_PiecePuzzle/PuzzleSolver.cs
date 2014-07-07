@@ -8,6 +8,5 @@ namespace Puzzle_Game
 {
     class PuzzleSolver
     {
-        //Will implement A* search method to solve puzzle automatically
     }
 }
