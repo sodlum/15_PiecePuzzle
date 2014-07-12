@@ -8,13 +8,21 @@ namespace Puzzle_Game
 {
     class NodeCollection
     {
-        public Node[,] nodes;
-        public Node[,] currentState;
+        private Node[,] nodes;
+        private Node[,] currentState;
         private int width;
         private int height;
 
-        public Node[,] Nodes { get { return currentState; } set { currentState = value; } }
+        /// <summary>
+        /// Gets the current state of the NodeCollection
+        /// </summary>
+        public Node[,] Nodes { get { return currentState; } }
 
+        /// <summary>
+        /// Creates the NodeCollection
+        /// </summary>
+        /// <param name="w">total number of nodes in a row</param>
+        /// <param name="h">total number of nodes in a column</param>
         public NodeCollection(int w, int h)
         {
             nodes = new Node[h, w];
@@ -24,6 +32,9 @@ namespace Puzzle_Game
             CreateNodes();
         }
 
+        /// <summary>
+        /// Creates nodes to represent board tiles
+        /// </summary>
         private void CreateNodes()
         {
             int counter = 1;
@@ -48,6 +59,10 @@ namespace Puzzle_Game
             }
         }
 
+        /// <summary>
+        /// Finds the empty node in the current state
+        /// </summary>
+        /// <returns>empty node</returns>
         public Node GetEmptyNode()
         {
             Node emptyNode = null;
@@ -62,6 +77,11 @@ namespace Puzzle_Game
             return emptyNode;
         }
 
+        /// <summary>
+        /// Finds the node with the corresponding value
+        /// </summary>
+        /// <param name="value">value of the node</param>
+        /// <returns>node corresponding to value</returns>
         public Node GetCorrespondingNode(string value)
         {
             if (value == "0")
@@ -79,6 +99,9 @@ namespace Puzzle_Game
             return corresponding;
         }
 
+        /// <summary>
+        /// Randomly shuffles Nnodes in the current state
+        /// </summary>
         public void ShuffleNodes()
         {
             Random rnd = new Random();
@@ -95,6 +118,10 @@ namespace Puzzle_Game
                 SwapNodes(GetCorrespondingNode("1"), GetCorrespondingNode("2"));
         }
 
+        /// <summary>
+        /// Validates that the shuffle is valid and the puzzle is capable of being solved
+        /// </summary>
+        /// <returns>true if the puzzle is valid, false otherwise</returns>
         public bool validateShuffle()
         {
             int rowOfEmptyTile = 0;
@@ -108,7 +135,7 @@ namespace Puzzle_Game
             {
                 if (linearValues[i] == 0)
                 {
-                    rowOfEmptyTile = (i / height);
+                    rowOfEmptyTile = (i / width);
                     continue;
                 }
 
@@ -122,9 +149,14 @@ namespace Puzzle_Game
                 }
             }
 
-            return ((width % 2 == 1 && inversions % 2 == 0) || (width % 2 == 0) && ((height - rowOfEmptyTile) % 2 == 1) == (inversions % 2 == 0));
+            return ((width % 2 == 1 && inversions % 2 == 0) || (width % 2 == 0) && ((height - rowOfEmptyTile) + inversions % 2 == 1));
         }
 
+        /// <summary>
+        /// Swaps two selected nodes
+        /// </summary>
+        /// <param name="first">First node</param>
+        /// <param name="second">Second node</param>
         private void SwapNodes(Node first, Node second)
         {
             Tuple<int, int> firstSet = GetIndexPair(first.Value.ToString());
@@ -136,6 +168,10 @@ namespace Puzzle_Game
                  secondSet.Item1);
         }
 
+        /// <summary>
+        /// Swaps the selected node with the empty node
+        /// </summary>
+        /// <param name="value">value of corresponding node</param>
         public void SwapWithEmptyNode(string value)
         {
             Node emptyNode = GetEmptyNode();
@@ -150,6 +186,13 @@ namespace Puzzle_Game
                  indexPairOfSwappingNode.Item1);
         }
 
+        /// <summary>
+        /// Perfoms the swap in the currens state of the NodeCollection
+        /// </summary>
+        /// <param name="fY">First node y position</param>
+        /// <param name="fX">First node x position</param>
+        /// <param name="sY">Second node y position</param>
+        /// <param name="sX">Second node x position</param>
         private void Swap(int fY, int fX, int sY, int sX)
         {
             int tempValue = currentState[fY, fX].Value;
@@ -157,29 +200,65 @@ namespace Puzzle_Game
             currentState[sY, sX].Value = tempValue;
         }
 
-        private Tuple<int, int> GetIndexPair(string value)
+        /// <summary>
+        /// Returns the (x, y) position of the node with the corresponding value
+        /// </summary>
+        /// <param name="value">value of corresponding node</param>
+        /// <returns>(x, y) pair</returns>
+        public Tuple<int, int> GetIndexPair(string value)
         {
-            int y = currentState.GetLength(0);
-            int x = currentState.GetLength(1);
-
-            for (int i = 0; i < x; i++)
-                for (int j = 0; j < y; j++)
+            for (int i = 0; i < width; i++)
+                for (int j = 0; j < height; j++)
                     if (currentState[j, i].Value.ToString() == value)
                         return Tuple.Create(i, j);
 
             return Tuple.Create(-1, -1);
         }
 
+        /// <summary>
+        /// Validates that the current state of the 
+        /// NodeCollection is in the solved state
+        /// </summary>
+        /// <returns>true if the puzzle is solved, false otherwise</returns>
+        public bool validateNodeOrder() 
+        {
+            for (int i = 0; i < width; i++)
+                for (int j = 0; j < height; j++)
+                    if (currentState[j, i].Value != nodes[j, i].Value)
+                        return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Node class to represent each node in the current state of the NodeCollection
+        /// </summary>
         internal class Node : ICloneable
         {
             private int value;
             private int x_pos;
             private int y_pos;
 
+            /// <summary>
+            /// Gets or sets the value of the current node
+            /// </summary>
             public int Value { get { return value; } set { this.value = value; } }
+
+            /// <summary>
+            /// Gets or sets the x position of the current node
+            /// </summary>
             public int X { get { return x_pos; } }
+
+            /// <summary>
+            /// Gets or sets the y position of the current node
+            /// </summary>
             public int Y { get { return y_pos; } }
 
+            /// <summary>
+            /// Creates an instance of the Node class
+            /// </summary>
+            /// <param name="v">Node value</param>
+            /// <param name="x">Node x position</param>
+            /// <param name="y">Node y position</param>
             public Node(int v, int x, int y)
             {
                 value = v;
@@ -187,7 +266,16 @@ namespace Puzzle_Game
                 y_pos = y;
             }
 
+            /// <summary>
+            /// Creates a deep copy of the current node
+            /// </summary>
+            /// <returns>copy of node</returns>
             public Node Clone() { return (Node)this.MemberwiseClone(); }
+
+            /// <summary>
+            /// Implements ICloneable.Clone()
+            /// </summary>
+            /// <returns>cloned object</returns>
             object ICloneable.Clone() { return Clone(); }
         }
     }

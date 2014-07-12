@@ -16,16 +16,28 @@ namespace Puzzle_Game
         private Button[,] buttons;
         private Control[] formControls;
         private NodeCollection nodes;
-        public Timer solveTimer;
+        private Timer solveTimer;
+        private bool startTimer;
+        private bool requiresValidation;
         private int width;
         private int height;
-
+        
         private delegate bool NodePositions(int e, int s);
 
-        public Form Puzzle { get { return frmPuzzle; } }
-        public Panel ButtonContainer { get { return pnlContainer; } }
-        public Button this[int x, int y] { get { return buttons[x, y]; } }
+        private enum CardinalDirection
+        {
+            WEST = 1,
+            EAST = 2,
+            SOUTH = 3,
+            NORTH = 4
+        }
 
+        /// <summary>
+        /// Creates instance of Puzzle Game
+        /// </summary>
+        /// <param name="nc">NodeCollection to represent board tiles</param>
+        /// <param name="w">width of the board</param>
+        /// <param name="h">heigh of the board</param>
         public PuzzleForm(ref NodeCollection nc, int w, int h)
         {
             width = w;
@@ -34,44 +46,173 @@ namespace Puzzle_Game
             solveTimer = new Timer();
             solveTimer.Interval = 1000;
             solveTimer.Tick += solveTimer_Tick;
+            requiresValidation = false;
+            startTimer = false;
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Moves the clicked button to the spot of the empty tile
+        /// if the empty tile is next to the clicked button
+        /// </summary>
+        /// <param name="sender">Clicked button</param>
+        /// <param name="e">Button click event arguments</param>
         private void btnNode_Click(object sender, EventArgs e)
         {
-            int directionOfSwap;
-            if(isNeighbouringEmptyTile((Button)sender, out directionOfSwap))
+            CardinalDirection directionOfSwap;
+            if (isEmptyTileInRowOrColumn((Button)sender, out directionOfSwap))
             {
-                solveTimer.Enabled = true;
-                nodes.SwapWithEmptyNode((sender as Button).Text);
-                updateClickedTile((Button)sender, directionOfSwap);
+                if (startTimer)
+                {
+                    startTimer = false;
+                    solveTimer.Enabled = true;
+                }
+                moveRowOrColumn((Button)sender, directionOfSwap);
             }
+
+            if(requiresValidation)
+                if (validateBoard())
+                    updateTimerLabels();
         }
 
-        private void updateClickedTile(Button tile, int direction)
+        private void moveRowOrColumn(Button clickedButton, CardinalDirection direction)
+        {
+            NodeCollection.Node correspondingNode = nodes.GetCorrespondingNode(clickedButton.Text);
+            NodeCollection.Node currentNode = new NodeCollection.Node(-1,-1,-1);
+            List<Button> linearValues = new List<Button>();
+
+            foreach(Button button in buttons)
+            {
+                if (button != null)
+                    linearValues.Add(button);
+            }
+
+            do
+            {
+                NodeCollection.Node emptyNode = nodes.GetEmptyNode();
+                NodePositions pos = CheckConditional;
+                Tuple<int, int> coordinates = nodes.GetIndexPair(emptyNode.Value.ToString());
+                bool moveNodes = true;
+                int x = coordinates.Item1;
+                int y = coordinates.Item2;
+
+                switch (direction)
+                {
+                    case CardinalDirection.WEST:
+                        if (!(pos(x + 1, width)))
+                            currentNode = nodes.Nodes[y, x + 1].Clone();
+                        else moveNodes = false;
+                        break;
+                    case CardinalDirection.EAST:
+                        if (!(pos(x - 1, -1)))
+                            currentNode = nodes.Nodes[y, x - 1].Clone();
+                        else moveNodes = false;
+                        break;
+                    case CardinalDirection.SOUTH:
+                        if (!(pos(y + 1, height)))
+                            currentNode = nodes.Nodes[y + 1, x].Clone();
+                        else moveNodes = false;
+                        break;
+                    case CardinalDirection.NORTH:
+                        if (!(pos(y - 1, -1)))
+                            currentNode = nodes.Nodes[y - 1, x].Clone();
+                        else moveNodes = false;
+                        break;
+                }
+
+                if (moveNodes)
+                {
+                    Button currentButton = (from button in linearValues where button.Text == currentNode.Value.ToString() select button).FirstOrDefault();
+
+                    nodes.SwapWithEmptyNode(currentNode.Value.ToString());
+                    updateClickedTile(currentButton, direction);
+                }
+
+            } while (correspondingNode.Value != 0);
+            
+        }
+
+        /// <summary>
+        /// Determines if the clicked button is in the
+        /// same row or colums as the empty tile
+        /// </summary>
+        /// <param name="clickedButton">Clicked button</param>
+        /// <param name="direction">out param to provide the direction of the empty tile
+        /// or 0 if the empty tile is not in the same row or column</param>
+        /// <returns>true if the emtpy tile is in the same row or column of the clicked button</returns>
+        private bool isEmptyTileInRowOrColumn(Button clickedButton, out CardinalDirection direction)
+        {
+            NodeCollection.Node emptyNode = nodes.GetEmptyNode();
+            NodeCollection.Node correspondingNode = nodes.GetCorrespondingNode(clickedButton.Text);
+            NodePositions pos = CheckConditional;
+
+            if (pos(emptyNode.Y, correspondingNode.Y))
+            {
+                if (emptyNode.X < correspondingNode.X)
+                    direction = CardinalDirection.WEST;
+                else direction = CardinalDirection.EAST;
+            }
+            else if (pos(emptyNode.X, correspondingNode.X))
+            {
+                if (emptyNode.Y < correspondingNode.Y)
+                    direction = CardinalDirection.SOUTH;
+                else direction = CardinalDirection.NORTH;
+            }
+            else direction = 0;
+
+            return direction != 0;
+        }
+
+        /// <summary>
+        /// Time Tracker for puzzle
+        /// </summary>
+        private void updateTimerLabels()
+        {
+            solveTimer.Enabled = false;
+            requiresValidation = false;
+            startTimer = false;
+            Control lblTimer = formControls.Where((Control x) => x.Name == "lblTimer").FirstOrDefault();
+            Control lblPrevTime = formControls.Where((Control x) => x.Name == "lblPrevTime").FirstOrDefault();
+            int timeInSeconds = int.Parse(new Regex("\\d+").Match(lblTimer.Text).Value);
+            lblPrevTime.Text = "Prev Time: " + timeInSeconds;
+        }
+
+        /// <summary>
+        /// Updates the clicked tile to move it the location of the empty tile
+        /// </summary>
+        /// <param name="tile">Clicked button</param>
+        /// <param name="direction">direction in which to move the clicked button</param>
+        private void updateClickedTile(Button tile, CardinalDirection direction)
         {
             switch (direction)
             {
-                case 1:
+                case CardinalDirection.WEST:
                     tile.Location = new Point(tile.Location.X - 35, tile.Location.Y);
                     break;
-                case 2:
+                case CardinalDirection.EAST:
                     tile.Location = new Point(tile.Location.X + 35, tile.Location.Y);
                     break;
-                case 3:
+                case CardinalDirection.SOUTH:
                     tile.Location = new Point(tile.Location.X, tile.Location.Y - 35);
                     break;
-                case 4:
+                case CardinalDirection.NORTH:
                     tile.Location = new Point(tile.Location.X, tile.Location.Y + 35);
                     break;
             }
         }
 
+        /// <summary>
+        /// Redraws all buttons on the board to reflect 
+        /// the current state of the NodeCollection
+        /// </summary>
         private void updateEntireBoard()
         {
             NodeCollection.Node[,] board = nodes.Nodes;
 
             frmPuzzle.Controls.Remove(pnlContainer);
+
+            //foreach (Control control in pnlContainer.Controls)
+            //    pnlContainer.Controls.Remove(control);
 
             pnlContainer = new Panel();
             pnlContainer.Size = new Size(width * 35 + 5, height * 35 + 5);
@@ -79,8 +220,12 @@ namespace Puzzle_Game
             pnlContainer.Location = new Point(20, 10);
             pnlContainer.BorderStyle = BorderStyle.Fixed3D;
 
+            buttons = new Button[width, height];
+
             foreach(NodeCollection.Node node in board)
             {
+                Tuple<int, int> indexes = nodes.GetIndexPair(node.Value.ToString());
+
                 if (node.Value != 0)
                 {
                     Button newButton = new Button();
@@ -90,53 +235,61 @@ namespace Puzzle_Game
                     newButton.Size = new Size(35, 35);
                     newButton.Visible = true;
                     newButton.Click += btnNode_Click;
-                    pnlContainer.Controls.Add(newButton);
+                    buttons[indexes.Item1, indexes.Item2] = newButton;
                 }
             }
 
-            BuildForm(false);
+            BuildForm();
         }
 
+        /// <summary>
+        /// Checks if two numbers are equal
+        /// </summary>
+        /// <param name="e">left of operator</param>
+        /// <param name="s">right of operator</param>
+        /// <returns>true if e and s are equal</returns>
         private bool CheckConditional(int e, int s) { return e == s; }
 
-        private bool isNeighbouringEmptyTile(Button clickedButton, out int direction)
-        {
-            NodeCollection.Node emptyNode = nodes.GetEmptyNode();
-            NodeCollection.Node correspondingNode = nodes.GetCorrespondingNode(clickedButton.Text);
-            NodePositions pos = CheckConditional;
-
-            if (pos(emptyNode.X + 1, correspondingNode.X) && pos(emptyNode.Y, correspondingNode.Y))
-                direction = 1;
-            else if (pos(emptyNode.X - 1, correspondingNode.X) && pos(emptyNode.Y, correspondingNode.Y))
-                direction = 2;
-            else if (pos(emptyNode.X, correspondingNode.X) && pos(emptyNode.Y + 1, correspondingNode.Y))
-                direction = 3;
-            else if (pos(emptyNode.X, correspondingNode.X) && pos(emptyNode.Y - 1, correspondingNode.Y))
-                direction = 4;
-            else
-                direction = 0;
-
-            return direction != 0;
-        }
-
+        /// <summary>
+        /// Resets the time tracker labels on the board
+        /// </summary>
         private void resetTimer()
         {
             solveTimer.Enabled = false;
             Control lblTimer = formControls.Where((Control x) => x.Name == "lblTimer").FirstOrDefault();
-            Control lblPrevTime = formControls.Where((Control x) => x.Name == "lblPrevTime").FirstOrDefault();
             lblTimer.Text = "Timer: 0";
-            lblPrevTime.Text = "";
         }
 
+        /// <summary>
+        /// Shuffles the tiles on the board to a completely random state
+        /// </summary>
+        /// <param name="sender">Shuffle button</param>
+        /// <param name="e">Button click event arguments</param>
         private void btnShuffle_Click(object sender, EventArgs e)
         {
+            startTimer = true;
+            requiresValidation = true;
             resetTimer();
             shuffle();
             updateEntireBoard();
         }
 
+        /// <summary>
+        /// Shuffles the nodes in the NodeCollection
+        /// </summary>
         private void shuffle() { nodes.ShuffleNodes(); }
 
+        /// <summary>
+        /// Validates that the puzzle is solved
+        /// </summary>
+        /// <returns>true if the puzzle is solved, false otherwise</returns>
+        private bool validateBoard() { return nodes.validateNodeOrder(); }
+
+        /// <summary>
+        /// Timer tick event for time tracking label
+        /// </summary>
+        /// <param name="sender">Timer control</param>
+        /// <param name="e">Timer tick event arguments</param>
         private void solveTimer_Tick(object sender, EventArgs e)
         {
             Control lblTimer = formControls.Where((Control x) => x.Name == "lblTimer").FirstOrDefault();
@@ -144,8 +297,16 @@ namespace Puzzle_Game
             lblTimer.Text = "Timer: " + (time + 1);
         }
 
+        /// <summary>
+        /// stops the timer to prevent error on exit
+        /// </summary>
+        /// <param name="sender">form control</param>
+        /// <param name="e">Form close event arguments</param>
         private void Puzzle_Close(object sender, EventArgs e) { solveTimer.Enabled = false; }
 
+        /// <summary>
+        /// Creates the board controls
+        /// </summary>
         private void InitializeComponent()
         {
             // Form
@@ -208,18 +369,20 @@ namespace Puzzle_Game
             frmPuzzle.Controls.Add(lblPrevTime);
             frmPuzzle.Controls.Add(btnShuffle);
 
-            BuildForm(true);
+            BuildForm();
         }
 
-        private void BuildForm(bool addButtons)
+        /// <summary>
+        /// Builds and displays the form
+        /// </summary>
+        private void BuildForm()
         {
-            if (addButtons)
-                foreach (Button button in buttons)
-                    if (button != null)
-                    {
-                        button.Visible = true;
-                        pnlContainer.Controls.Add(button);
-                    }
+            foreach (Button button in buttons)
+                if (button != null)
+                {
+                    button.Visible = true;
+                    pnlContainer.Controls.Add(button);
+                }
 
             pnlContainer.Visible = true;
 
